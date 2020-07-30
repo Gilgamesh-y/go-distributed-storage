@@ -8,7 +8,7 @@ import (
 type FileMeta struct {
 	Name string
 	Size int64
-	UpdateAt string
+	UpdatedAt string
 	Path string
 }
 
@@ -37,6 +37,16 @@ func (fm FileMeta) isExist() bool {
 		return false
 	}
 	return true
+}
+
+func (fm FileMeta) CreateDirIfNotExist(dir string) error {
+	 if !fm.isExist() {
+		 err := os.MkdirAll(dir, 0777)
+		 if err != nil {
+			 return err
+		 }
+	 }
+	 return nil
 }
 
 func (fm FileMeta) GetModTime() time.Time {
