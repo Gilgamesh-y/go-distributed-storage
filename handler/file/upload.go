@@ -36,8 +36,8 @@ func Upload(c *gin.Context) {
 			response.Resp(c, err, fm)
 			return
 		}
-		response.Resp(c, nil, nil)
 	}
+	response.Resp(c, nil, nil)
 }
 
 func Get(c *gin.Context) {
