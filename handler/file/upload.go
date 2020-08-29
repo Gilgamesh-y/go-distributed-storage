@@ -15,11 +15,13 @@ func Upload(c *gin.Context) {
 	files := form.File["files"]
 	for _, file := range files {
 		pwd, _ := os.Getwd()
-		fm := fileMeta.FileMeta{
+		fm := &fileMeta.FileMeta{
 			Name: file.Filename,
 			Path: pwd + viper.GetString("upload_dir") + file.Filename,
+			Size: file.Size,
 			UpdatedAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
+		fm.ToSha1()
 		err := fm.CreateDirIfNotExist(pwd + viper.GetString("upload_dir"))
 		if err != nil {
 			response.Resp(c, err, fm)
@@ -30,7 +32,17 @@ func Upload(c *gin.Context) {
 			response.Resp(c, err, fm)
 			return
 		}
-		fm.Size = fm.GetSize()
+
+		existFm, err := file_model.GetByHash(fm.Hash)
+		if err != nil {
+			response.Resp(c, err, fm)
+			return
+		}
+		if existFm.Id != 0 {
+			response.Resp(c, response.FileExist, existFm)
+			return
+		}
+
 		_, err = file_model.Insert(fm)
 		if err != nil {
 			response.Resp(c, err, fm)
@@ -38,13 +50,4 @@ func Upload(c *gin.Context) {
 		}
 	}
 	response.Resp(c, nil, nil)
-}
-
-func Get(c *gin.Context) {
-	fm, err := file_model.Get()
-	if err != nil {
-		response.Resp(c, err, fm)
-		return
-	}
-	response.Resp(c, err, fm)
 }
