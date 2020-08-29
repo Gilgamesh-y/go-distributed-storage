@@ -5,6 +5,7 @@ import "bytes"
 var (
 	Success	= &BaseErr{Code: 0, Message: "Success"}
 	ServerError = &BaseErr{Code: 10001, Message: "Server Error"}
+	FileExist = &BaseErr{Code: 10002, Message: "The file already exists"}
 )
 
 type BaseErr struct {
@@ -60,7 +61,6 @@ func formatErr(err error) (int, string) {
 		return typed.Code, typed.Error()
 	case *BaseErr:
 		return typed.Code, typed.Message
-	default:
 	}
 
 	return ServerError.Code, err.Error()
