@@ -1,15 +1,20 @@
 package fileMeta
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
 type FileMeta struct {
+	Id int
 	Name string
 	Size int64
 	UpdatedAt string
 	Path string
+	Hash string
 }
 
 var fileMetas map[string]FileMeta
@@ -52,4 +57,12 @@ func (fm FileMeta) CreateDirIfNotExist(dir string) error {
 func (fm FileMeta) GetModTime() time.Time {
 	file, _ := os.Stat(fm.Path)
 	return file.ModTime()
+}
+
+func (fm *FileMeta) ToSha1() {
+	s := fm.Name + strconv.FormatInt(fm.Size, 10)
+	h := sha1.New()
+	h.Write([]byte(s))
+	bs := h.Sum(nil)
+	fm.Hash = fmt.Sprintf("%x\n", bs)
 }
