@@ -4,6 +4,7 @@ import (
 	"DistributedStorage/fileMeta"
 	"DistributedStorage/model/file_model"
 	"DistributedStorage/response"
+	"DistributedStorage/util/snowflake"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"os"
@@ -50,4 +51,18 @@ func Upload(c *gin.Context) {
 		}
 	}
 	response.Resp(c, nil, nil)
+}
+
+func InitMultiPartUpload(c *gin.Context) {
+	var mpu file_model.MultiPartUpload
+	if err := c.ShouldBind(&mpu); err != nil {
+		response.Resp(c, err, mpu)
+		return
+	}
+	worker, err := snowflake.NewWorker(1)
+	if err != nil {
+		response.Resp(c, err, nil)
+		return
+	}
+	mpu.Id = worker.GetId()
 }

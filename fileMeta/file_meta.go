@@ -64,5 +64,5 @@ func (fm *FileMeta) ToSha1() {
 	h := sha1.New()
 	h.Write([]byte(s))
 	bs := h.Sum(nil)
-	fm.Hash = fmt.Sprintf("%x\n", bs)
+	fm.Hash = fmt.Sprintf("%x", bs)
 }

@@ -44,10 +44,14 @@ func GetPool() *redis.Pool {
 }
 
 func Set(key string, args ...interface{}) error {
-	_, err := GetPool().Get().Do("SET", key, args)
+	conn := GetPool().Get()
+	defer conn.Close()
+	_, err := conn.Do("SET", key, args)
 	return err
 }
 
 func Get(key string) (string, error) {
-	return redis.String(GetPool().Get().Do("GET", key))
+	conn := GetPool().Get()
+	defer conn.Close()
+	return redis.String(conn.Do("GET", key))
 }

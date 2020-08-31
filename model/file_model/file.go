@@ -5,6 +5,14 @@ import (
 	"DistributedStorage/model"
 )
 
+type MultiPartUpload struct {
+	Id int64
+	Hash string `form:"hash" binding:"required"`
+	FileSize int64 `form:"file_size" binding:"required"`
+	ChunkSize int64 `form:"chunk_size" binding:"required"`
+	ChunkCount int `form:"chunk_count" binding:"required"`
+}
+
 func Insert(fm *fileMeta.FileMeta) (int64, error) {
 	state, err := model.GetConn().Prepare("insert into files (`name`, `size`, `hash`, `path`) values (?,?,?,?)")
 	if err != nil {
