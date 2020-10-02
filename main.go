@@ -7,6 +7,7 @@ import (
 	"DistributedStorage/route"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -28,7 +29,7 @@ func main() {
 	cache.Init()
 
 	err := cache.Set("SET", "name", "wrath")
-	m, err := cache.GetString("name")
+	m, err := redis.String(cache.Get("GET", "name"))
 	if err != nil {
 		fmt.Println(err)
 	}
