@@ -15,6 +15,7 @@ type FileMeta struct {
 	UpdatedAt string
 	Path string
 	Hash string
+	UploadId string
 }
 
 var fileMetas map[string]FileMeta
