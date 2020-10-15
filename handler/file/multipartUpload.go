@@ -3,7 +3,6 @@ package file
 import (
 	"DistributedStorage/cache"
 	"DistributedStorage/fileMeta"
-	"DistributedStorage/model/file_model"
 	"DistributedStorage/response"
 	"DistributedStorage/util/snowflake"
 	"github.com/gin-gonic/gin"
@@ -36,56 +35,9 @@ type MultipartUploadCompleteStruct struct {
 }
 
 /**
- * Upload a file
- */
-func Upload(c *gin.Context) {
-	form, _ := c.MultipartForm()
-	files := form.File["files"]
-	pwd, _ := os.Getwd()
-	nowtime := time.Now().Format("2006-01-02 15:04:05")
-	uploadDir := pwd + viper.GetString("upload_dir") + nowtime + "/upload/"
-	for _, file := range files {
-		fm := &fileMeta.FileMeta{
-			Name: file.Filename,
-			Path: uploadDir + file.Filename,
-			Size: file.Size,
-			UpdatedAt: nowtime,
-		}
-		fm.ToSha1()
-		err := fm.CreateDirIfNotExist(uploadDir)
-		if err != nil {
-			response.Resp(c, err, fm)
-			return
-		}
-		err = c.SaveUploadedFile(file, fm.Path)
-		if err != nil {
-			response.Resp(c, err, fm)
-			return
-		}
-
-		existFm, err := file_model.GetByHash(fm.Hash)
-		if err != nil {
-			response.Resp(c, err, fm)
-			return
-		}
-		if existFm.Id != 0 {
-			response.Resp(c, response.FileExist, existFm)
-			return
-		}
-
-		_, err = file_model.Insert(fm)
-		if err != nil {
-			response.Resp(c, err, fm)
-			return
-		}
-	}
-	response.Resp(c, nil, nil)
-}
-
-/**
  * Init the information about multipart upload
  */
-func InitMultiPartUploadInfo(c *gin.Context) {
+func InitMultipartUploadInfo(c *gin.Context) {
 	var impu InitMultiPartUploadStruct
 	if err := c.ShouldBind(&impu); err != nil {
 		response.Resp(c, err, impu)
