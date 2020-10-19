@@ -12,10 +12,10 @@ func Init() {
 	cacheDriver = viper.GetString("cache_driver")
 }
 
-func Set(action string, key string, args ...interface{}) error {
+func Set(action string, args ...interface{}) error {
 	switch cacheDriver {
 	case "redis":
-		return credis.Set(action, key, args)
+		return credis.Set(action, args...)
 	default:
 		panic("未设置缓存驱动")
 	}

@@ -43,10 +43,10 @@ func GetPool() *redis.Pool {
 	return pool
 }
 
-func Set(action string, key string, args ...interface{}) error {
+func Set(action string, args ...interface{}) error {
 	conn := GetPool().Get()
 	defer conn.Close()
-	_, err := conn.Do(action, key, args)
+	_, err := conn.Do(action, args...)
 	return err
 }
 
