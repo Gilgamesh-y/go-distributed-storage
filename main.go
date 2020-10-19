@@ -1,13 +1,10 @@
 package main
 
 import (
-	"DistributedStorage/cache"
 	"DistributedStorage/conf"
 	"DistributedStorage/model"
 	"DistributedStorage/route"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gomodule/redigo/redis"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -25,14 +22,5 @@ func main() {
 	gin.SetMode("debug")
 	g := gin.New()
 	route.Load(g)
-
-	cache.Init()
-
-	err := cache.Set("SET", "name", "wrath")
-	m, err := redis.String(cache.Get("GET", "name"))
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(m)
 	g.Run(":"+viper.GetString("port"))
 }

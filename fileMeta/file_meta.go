@@ -2,8 +2,11 @@ package fileMeta
 
 import (
 	"crypto/sha1"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -37,7 +40,12 @@ func (fm FileMeta) GetSize() int64 {
 	return file.Size()
 }
 
-func (fm FileMeta) isExist() bool {
+func (fm FileMeta) GetName() string {
+	file, _ := os.Stat(fm.Path)
+	return file.Name()
+}
+
+func (fm FileMeta) IsExist() bool {
 	_, err := os.Stat(fm.Path)
 	if (os.IsNotExist(err)) {
 		return false
@@ -46,7 +54,7 @@ func (fm FileMeta) isExist() bool {
 }
 
 func (fm FileMeta) CreateDirIfNotExist(dir string) error {
-	 if !fm.isExist() {
+	 if !fm.IsExist() {
 		 err := os.MkdirAll(dir, 0777)
 		 if err != nil {
 			 return err
@@ -60,10 +68,41 @@ func (fm FileMeta) GetModTime() time.Time {
 	return file.ModTime()
 }
 
-func (fm *FileMeta) ToSha1() {
+func (fm *FileMeta) FileNameToSha1() {
+	if fm.Name == "" {
+		fm.Name = fm.GetName()
+	}
 	s := fm.Name + strconv.FormatInt(fm.Size, 10)
 	h := sha1.New()
 	h.Write([]byte(s))
-	bs := h.Sum(nil)
-	fm.Hash = fmt.Sprintf("%x", bs)
+	fm.Hash = hex.EncodeToString(h.Sum([]byte("")))
+}
+
+// Contain : 判断某个元素是否在 slice,array ,map中
+func Contain(target interface{}, obj interface{}) (bool, error) {
+	targetVal := reflect.ValueOf(target)
+	switch reflect.TypeOf(target).Kind() {
+	case reflect.Slice, reflect.Array:
+		// 是否在slice/array中
+		for i := 0; i < targetVal.Len(); i++ {
+			if targetVal.Index(i).Interface() == obj {
+				return true, nil
+			}
+		}
+	case reflect.Map:
+		// 是否在map key中
+		if targetVal.MapIndex(reflect.ValueOf(obj)).IsValid() {
+			return true, nil
+		}
+	default:
+		fmt.Println(reflect.TypeOf(target).Kind())
+	}
+
+	return false, errors.New("not in this array/slice/map")
+}
+
+func Sha1(data []byte) string {
+	_sha1 := sha1.New()
+	_sha1.Write(data)
+	return hex.EncodeToString(_sha1.Sum([]byte("")))
 }

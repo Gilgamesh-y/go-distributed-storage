@@ -18,8 +18,8 @@ type InitMultiPartUploadStruct struct {
 	UploadId   int64  `form:"upload_id"`
 	Hash       string `form:"hash" binding:"required"`
 	FileSize   int64  `form:"file_size" binding:"required"`
-	ChunkSize  int64  `form:"chunk_size" binding:"required"`
-	ChunkCount int    `form:"chunk_count" binding:"required"`
+	ChunkSize  int64  `form:"chunk_size"`
+	ChunkCount int    `form:"chunk_count"`
 }
 
 type MultiPartUploadStruct struct {
@@ -55,9 +55,9 @@ func InitMultipartUploadInfo(c *gin.Context) {
 
 	// Save the information of the file into redis
 	key := "mpu_"+strconv.FormatInt(impu.UploadId, 10)
-	cache.Set("HSET", key, "chunk_count", impu.ChunkCount)
-	cache.Set("HSET", key, "hash", impu.Hash)
-	cache.Set("HSET", key, "file_size", impu.FileSize)
+	cache.Set("HSET", key, "chunk_count", impu.ChunkCount, "EX", 7 * 86400)
+	cache.Set("HSET", key, "hash", impu.Hash, "EX", 7 * 86400)
+	cache.Set("HSET", key, "file_size", impu.FileSize, "EX", 7 * 86400)
 
 	response.Resp(c, nil, impu)
 }
@@ -72,12 +72,11 @@ func MultipartUpload(c *gin.Context) {
 		return
 	}
 	pwd, _ := os.Getwd()
-	nowtime := time.Now().Format("2006-01-02 15:04:05")
+	nowtime := time.Now().Format("2006-01-02")
 	uploadDir := pwd + viper.GetString("upload_dir") + nowtime + "/multipart_upload/" + strconv.FormatInt(mpu.UploadId, 10) + "/"
 	fm := &fileMeta.FileMeta{
 		Path: uploadDir + strconv.Itoa(mpu.ChunkIndex),
 	}
-
 	// TODO Verify the hash value
 
 	// Save the content of the chunk
@@ -102,10 +101,13 @@ func MultipartUpload(c *gin.Context) {
 	}
 
 	key := "mpu_"+strconv.FormatInt(mpu.UploadId, 10)
-	cache.Set("HSET", key, "chunk_index_" + strconv.Itoa(mpu.ChunkIndex), 1)
-	response.Resp(c, nil, nil)
+	cache.Set("HSET", key, "chunk_index_" + strconv.Itoa(mpu.ChunkIndex), 1, "EX", 7 * 86400)
+	response.Resp(c, nil, mpu)
 }
 
+/**
+ * Notice to upload and merge
+ */
 func MultipartUploadComplete(c *gin.Context) {
 	var mpuc MultipartUploadCompleteStruct
 	if err := c.ShouldBind(&mpuc); err != nil {
@@ -139,4 +141,20 @@ func MultipartUploadComplete(c *gin.Context) {
 
 	// TODO Update database
 
+}
+
+/**
+ * Notice to cancel upload
+ */
+func CancelUpload(c *gin.Context) {
+ 	// TODO delete existing chunked files
+	// TODO delete redis cache
+	// TODO update mysql
+}
+
+/**
+ * Get the info about upload status
+ */
+func MultipartUploadStatus(c *gin.Context) {
+	// TODO get unsuccessful data from redis according to upload_id
 }

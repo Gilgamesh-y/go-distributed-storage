@@ -26,7 +26,7 @@ func Upload(c *gin.Context) {
 			Size: file.Size,
 			UpdatedAt: nowtime,
 		}
-		fm.ToSha1()
+		fm.FileNameToSha1()
 		err := fm.CreateDirIfNotExist(uploadDir)
 		if err != nil {
 			response.Resp(c, err, fm)
