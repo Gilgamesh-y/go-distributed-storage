@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfg = pflag.StringP("conf", "c", "", "go-distributed-strorage config file_model path")
+var cfg = pflag.StringP("conf", "c", "", "")
 
 func main() {
 	pflag.Parse()

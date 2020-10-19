@@ -20,6 +20,7 @@ type InitMultiPartUploadStruct struct {
 	FileSize   int64  `form:"file_size" binding:"required"`
 	ChunkSize  int64  `form:"chunk_size"`
 	ChunkCount int    `form:"chunk_count"`
+	chunkIndexExists []int `form:"chunk_index_exists"`
 }
 
 type MultiPartUploadStruct struct {
@@ -48,16 +49,47 @@ func InitMultipartUploadInfo(c *gin.Context) {
 		response.Resp(c, err, nil)
 		return
 	}
+
+	// Does the file exist
+	fileExists, _ := redis.Bool(cache.Get("EXISTS", "mpu_"+impu.Hash))
+	if fileExists {
+		uploadId, _ := redis.String(cache.Get("GET", "mpu_"+impu.Hash))
+		impu.UploadId, _ = strconv.ParseInt(uploadId, 10, 64)
+	}
+
+	/**
+	 * If uploading for the first time, create a new upload_id, if not, get the uploaded parts according to upload_id
+	 */
+	chunkIndexExists := []int{}
+	if impu.UploadId == 0 {
+		impu.UploadId = worker.GetId()
+	} else {
+		chunks, _ := redis.Values(cache.Get("HGETALL", "mpu_"+strconv.FormatInt(impu.UploadId, 10)))
+		for i := 0; i < len(chunks); i += 2 {
+			k := string(chunks[i].([]byte))
+			v := string(chunks[i+1].([]byte))
+			if strings.HasPrefix(k, "chunk_index") && v == "1" {
+				// Get the value about chunk_index from key
+				chunkIndex, _ := strconv.Atoi(k[11:len(k)])
+				chunkIndexExists = append(chunkIndexExists, chunkIndex)
+			}
+		}
+		impu.chunkIndexExists = chunkIndexExists
+	}
+
 	// Get the information about multipart upload
-	impu.UploadId = worker.GetId()
 	impu.ChunkSize = 5*1024*1024 // 5MB
 	impu.ChunkCount = int(impu.FileSize/impu.ChunkSize)
 
-	// Save the information of the file into redis
-	key := "mpu_"+strconv.FormatInt(impu.UploadId, 10)
-	cache.Set("HSET", key, "chunk_count", impu.ChunkCount, "EX", 7 * 86400)
-	cache.Set("HSET", key, "hash", impu.Hash, "EX", 7 * 86400)
-	cache.Set("HSET", key, "file_size", impu.FileSize, "EX", 7 * 86400)
+	if len(chunkIndexExists) == 0 {
+		// Save the information of the file into redis
+		key := "mpu_"+strconv.FormatInt(impu.UploadId, 10)
+		cache.Set("HSET", key, "chunk_count", impu.ChunkCount, "EX", 7 * 86400)
+		cache.Set("HSET", key, "hash", impu.Hash, "EX", 7 * 86400)
+		cache.Set("HSET", key, "file_size", impu.FileSize, "EX", 7 * 86400)
+		// Save the upload_id of the file hash
+		cache.Set("SET", "mpu_"+impu.Hash, impu.UploadId, "EX", 7 * 86400)
+	}
 
 	response.Resp(c, nil, impu)
 }
@@ -153,7 +185,7 @@ func CancelUpload(c *gin.Context) {
 }
 
 /**
- * Get the info about upload status
+ * Get the information of the upload status
  */
 func MultipartUploadStatus(c *gin.Context) {
 	// TODO get unsuccessful data from redis according to upload_id
