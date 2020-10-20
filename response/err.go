@@ -3,9 +3,11 @@ package response
 import "bytes"
 
 var (
-	Success	= &BaseErr{Code: 0, Message: "Success"}
-	ServerError = &BaseErr{Code: 10001, Message: "Server Error"}
-	FileExist = &BaseErr{Code: 10002, Message: "The file already exists"}
+	Success          = &BaseErr{Code: 0, Message: "Success"}
+	ServerError      = &BaseErr{Code: 10001, Message: "Server Error"}
+	FileExist        = &BaseErr{Code: 10002, Message: "The file already exists"}
+	UploadIdNotFound = &BaseErr{Code: 10003, Message: "Not found the upload_id"}
+	DelFileFail = &BaseErr{Code: 10003, Message: "Delete file faild"}
 )
 
 type BaseErr struct {

@@ -35,6 +35,10 @@ type MultipartUploadCompleteStruct struct {
 	FileName int   `form:"file_name" binding:"required"`
 }
 
+const (
+	RedisPrefixKey = "mpu_"
+)
+
 /**
  * Init the information about multipart upload
  */
@@ -51,9 +55,9 @@ func InitMultipartUploadInfo(c *gin.Context) {
 	}
 
 	// Does the file exist
-	fileExists, _ := redis.Bool(cache.Get("EXISTS", "mpu_"+impu.Hash))
+	fileExists, _ := redis.Bool(cache.Get("EXISTS", RedisPrefixKey+impu.Hash))
 	if fileExists {
-		uploadId, _ := redis.String(cache.Get("GET", "mpu_"+impu.Hash))
+		uploadId, _ := redis.String(cache.Get("GET", RedisPrefixKey+impu.Hash))
 		impu.UploadId, _ = strconv.ParseInt(uploadId, 10, 64)
 	}
 
@@ -64,7 +68,7 @@ func InitMultipartUploadInfo(c *gin.Context) {
 	if impu.UploadId == 0 {
 		impu.UploadId = worker.GetId()
 	} else {
-		chunks, _ := redis.Values(cache.Get("HGETALL", "mpu_"+strconv.FormatInt(impu.UploadId, 10)))
+		chunks, _ := redis.Values(cache.Get("HGETALL", RedisPrefixKey+strconv.FormatInt(impu.UploadId, 10)))
 		for i := 0; i < len(chunks); i += 2 {
 			k := string(chunks[i].([]byte))
 			v := string(chunks[i+1].([]byte))
@@ -83,12 +87,12 @@ func InitMultipartUploadInfo(c *gin.Context) {
 
 	if len(chunkIndexExists) == 0 {
 		// Save the information of the file into redis
-		key := "mpu_"+strconv.FormatInt(impu.UploadId, 10)
+		key := RedisPrefixKey+strconv.FormatInt(impu.UploadId, 10)
 		cache.Set("HSET", key, "chunk_count", impu.ChunkCount, "EX", 7 * 86400)
 		cache.Set("HSET", key, "hash", impu.Hash, "EX", 7 * 86400)
 		cache.Set("HSET", key, "file_size", impu.FileSize, "EX", 7 * 86400)
 		// Save the upload_id of the file hash
-		cache.Set("SET", "mpu_"+impu.Hash, impu.UploadId, "EX", 7 * 86400)
+		cache.Set("SET", RedisPrefixKey+impu.Hash, impu.UploadId, "EX", 7 * 86400)
 	}
 
 	response.Resp(c, nil, impu)
@@ -132,7 +136,7 @@ func MultipartUpload(c *gin.Context) {
 		}
 	}
 
-	key := "mpu_"+strconv.FormatInt(mpu.UploadId, 10)
+	key := RedisPrefixKey+strconv.FormatInt(mpu.UploadId, 10)
 	cache.Set("HSET", key, "chunk_index_" + strconv.Itoa(mpu.ChunkIndex), 1, "EX", 7 * 86400)
 	response.Resp(c, nil, mpu)
 }
@@ -147,7 +151,7 @@ func MultipartUploadComplete(c *gin.Context) {
 		return
 	}
 	// Determine whether all the chunks are uploaded
-	mpuData, err := redis.Values(cache.Get("HGETALL", "mpu_" + strconv.FormatInt(mpuc.UploadId, 10)))
+	mpuData, err := redis.Values(cache.Get("HGETALL", RedisPrefixKey + strconv.FormatInt(mpuc.UploadId, 10)))
 	if err != nil {
 		response.Resp(c, err, "上传失败")
 		return
@@ -179,8 +183,21 @@ func MultipartUploadComplete(c *gin.Context) {
  * Notice to cancel upload
  */
 func CancelUpload(c *gin.Context) {
- 	// TODO delete existing chunked files
+	hash := c.PostForm("hash")
 	// TODO delete redis cache
+	uploadId, _ := redis.String(cache.Get("GET", RedisPrefixKey + hash))
+	if uploadId == "" {
+		response.Resp(c, response.New(response.UploadIdNotFound, hash),  nil)
+		return
+	}
+	// TODO delete existing chunked files
+	pwd, _ := os.Getwd()
+	nowtime := time.Now().Format("2006-01-02")
+	uploadDir := pwd + viper.GetString("upload_dir") + nowtime + "/multipart_upload/" + uploadId
+	if !fileMeta.DelFileByShell(uploadDir) {
+		response.Resp(c, response.New(response.DelFileFail, uploadId),  nil)
+		return
+	}
 	// TODO update mysql
 }
 

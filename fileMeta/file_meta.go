@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -106,3 +108,23 @@ func Sha1(data []byte) string {
 	_sha1.Write(data)
 	return hex.EncodeToString(_sha1.Sum([]byte("")))
 }
+
+// RemovePathByShell : 通过调用shell来删除制定目录 合并成功将返回true, 否则返回false
+func DelFileByShell(path string) bool {
+	cmdStr := strings.Replace(`
+	#!/bin/bash
+	chunkDir="/data/chunks/"
+	targetDir=$1
+	# 增加条件判断，避免误删  (指定的路径包含且不等于chunkDir)
+	if [[ $targetDir =~ $chunkDir ]] && [[ $targetDir != $chunkDir ]]; then 
+	  rm -rf $targetDir
+	fi
+	`, "$1", path, 1)
+	delCmd := exec.Command("bash", "-c", cmdStr)
+	if _, err := delCmd.Output(); err != nil {
+		fmt.Println(err)
+		return false
+	}
+	return true
+}
+
