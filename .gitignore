@@ -16,4 +16,4 @@
 # vendor/
 storage/*
 
-conf/config.yaml
+conf/conf.yaml
