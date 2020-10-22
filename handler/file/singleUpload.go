@@ -6,6 +6,7 @@ import (
 	"DistributedStorage/response"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"os"
 	"time"
 )
@@ -19,11 +20,11 @@ func Upload(c *gin.Context) {
 	pwd, _ := os.Getwd()
 	nowtime := time.Now().Format("2006-01-02 15:04:05")
 	uploadDir := pwd + viper.GetString("upload_dir") + nowtime + "/upload/"
-	for _, file := range files {
+	for _, fileHeader := range files {
 		fm := &fileMeta.FileMeta{
-			Name: file.Filename,
-			Path: uploadDir + file.Filename,
-			Size: file.Size,
+			Name: fileHeader.Filename,
+			Path: uploadDir + fileHeader.Filename,
+			Size: fileHeader.Size,
 			UpdatedAt: nowtime,
 		}
 		fm.FileNameToSha1()
@@ -32,11 +33,18 @@ func Upload(c *gin.Context) {
 			response.Resp(c, err, fm)
 			return
 		}
-		err = c.SaveUploadedFile(file, fm.Path)
+
+		// Save to local storage
+		err = c.SaveUploadedFile(fileHeader, fm.Path)
 		if err != nil {
 			response.Resp(c, err, fm)
 			return
 		}
+
+
+		// Save to ali oss
+		file, _ := fileHeader.Open()
+		fileData, _ := ioutil.ReadAll(file)
 
 		existFm, err := file_model.GetByHash(fm.Hash)
 		if err != nil {
