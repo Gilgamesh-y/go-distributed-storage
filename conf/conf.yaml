@@ -15,8 +15,8 @@ cache_pass:
 cache_port: 6379
 
 # 阿里云
-uploadUrl: http://gilgamesh.oss-cn-hongkong.aliyuncs.com
-endPoint: oss-cn-hongkong.aliyuncs.com
+uploadUrl: https://wrath-distributed-storage.oss-cn-shanghai.aliyuncs.com
+endPoint: oss-cn-shanghai.aliyuncs.com
 accessKeyId: accessKeyId_example
 accessKeySecret: accessKeySecret_example
-bucketName: gilgamesh
+bucketName: wrath-distributed-storage
