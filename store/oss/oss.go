@@ -10,9 +10,9 @@ var client *oss.Client
 
 func Client() *oss.Client {
 	if client == nil {
-		client, err := oss.New(viper.GetString("endPoint"),
-			viper.GetString("accessKeyId"),
-			viper.GetString("accessKeySecret"))
+		client, err := oss.New(viper.GetString("end_point"),
+			viper.GetString("access_key_id"),
+			viper.GetString("access_key_secret"))
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -22,13 +22,17 @@ func Client() *oss.Client {
 	return client
 }
 
-func Bucket() (*oss.Bucket, error) {
+func Bucket() *oss.Bucket {
 	// 获取存储空间。
-	return Client().Bucket(viper.GetString("bucketName"))
+	bucket, err := Client().Bucket(viper.GetString("bucket_name"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	return bucket
 }
 
 func GetOssFileList(nextMarker string, page int) (oss.ListObjectsResult, error) {
-	bucket, _ := Bucket()
+	bucket := Bucket()
 	marker := oss.Marker(nextMarker)
 	list, err := bucket.ListObjects(oss.MaxKeys(page), marker)
 	if err != nil {
@@ -39,7 +43,7 @@ func GetOssFileList(nextMarker string, page int) (oss.ListObjectsResult, error) 
 }
 
 func DeleteOssFile(name string) (int, error) {
-	bucket, _ := Bucket()
+	bucket := Bucket()
 	err := bucket.DeleteObject(name)
 	if err != nil {
 		return 0, err
@@ -49,7 +53,7 @@ func DeleteOssFile(name string) (int, error) {
 }
 
 func CountOssFile() (int, error) {
-	bucket, _ := Bucket()
+	bucket := Bucket()
 	var lsRes oss.ListObjectsResult
 	var err error
 

@@ -18,7 +18,7 @@ func Upload(c *gin.Context) {
 	form, _ := c.MultipartForm()
 	files := form.File["files"]
 	pwd, _ := os.Getwd()
-	nowtime := time.Now().Format("2006-01-02 15:04:05")
+	nowtime := time.Now().Format("2006-01-02")
 	uploadDir := pwd + viper.GetString("upload_dir") + nowtime + "/upload/"
 	for _, fileHeader := range files {
 		fm := &fileMeta.FileMeta{
@@ -45,6 +45,8 @@ func Upload(c *gin.Context) {
 		// Save to ali oss
 		file, _ := fileHeader.Open()
 		fileData, _ := ioutil.ReadAll(file)
+
+		ossPath := nowtime + "/full_"
 
 		existFm, err := file_model.GetByHash(fm.Hash)
 		if err != nil {
