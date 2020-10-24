@@ -4,9 +4,10 @@ import (
 	"DistributedStorage/fileMeta"
 	"DistributedStorage/model/file_model"
 	"DistributedStorage/response"
+	"DistributedStorage/store/oss"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -23,11 +24,11 @@ func Upload(c *gin.Context) {
 	for _, fileHeader := range files {
 		fm := &fileMeta.FileMeta{
 			Name: fileHeader.Filename,
-			Path: uploadDir + fileHeader.Filename,
 			Size: fileHeader.Size,
 			UpdatedAt: nowtime,
 		}
 		fm.FileNameToSha1()
+		fm.Path = uploadDir + fm.Hash
 		err := fm.CreateDirIfNotExist(uploadDir)
 		if err != nil {
 			response.Resp(c, err, fm)
@@ -44,9 +45,13 @@ func Upload(c *gin.Context) {
 
 		// Save to ali oss
 		file, _ := fileHeader.Open()
-		fileData, _ := ioutil.ReadAll(file)
-
-		ossPath := nowtime + "/full_"
+		fm.Path = "full_scale/" + nowtime + "/" + fm.Hash + fileHeader.Filename
+		err =oss.Bucket().PutObject(fm.Path, file)
+		if err != nil {
+			fmt.Println(err)
+			response.Resp(c, err, fm)
+			return
+		}
 
 		existFm, err := file_model.GetByHash(fm.Hash)
 		if err != nil {
