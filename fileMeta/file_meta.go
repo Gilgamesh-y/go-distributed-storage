@@ -23,6 +23,15 @@ type FileMeta struct {
 	UploadId string
 }
 
+
+// TransferData : 将要写到rabbitmq的数据的结构体
+type TransferData struct {
+	Hash      string
+	TmpPath   string // 上传文件的临时存储地址
+	TargetPath  string // 上传文件需要保存到的存储地址
+	StoreType int
+}
+
 var fileMetas map[string]FileMeta
 
 func init() {

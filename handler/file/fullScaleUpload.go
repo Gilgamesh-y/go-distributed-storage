@@ -1,11 +1,12 @@
 package file
 
 import (
+	"DistributedStorage/conf"
 	"DistributedStorage/fileMeta"
 	"DistributedStorage/model/file_model"
+	"DistributedStorage/mq/rabbitmq"
 	"DistributedStorage/response"
-	"DistributedStorage/store/oss"
-	"fmt"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"os"
@@ -21,6 +22,7 @@ func Upload(c *gin.Context) {
 	pwd, _ := os.Getwd()
 	nowtime := time.Now().Format("2006-01-02")
 	uploadDir := pwd + viper.GetString("upload_dir") + nowtime + "/upload/"
+	storeType := viper.GetInt("store_type")
 	for _, fileHeader := range files {
 		fm := &fileMeta.FileMeta{
 			Name: fileHeader.Filename,
@@ -42,15 +44,27 @@ func Upload(c *gin.Context) {
 			return
 		}
 
-
 		// Save to ali oss
-		file, _ := fileHeader.Open()
-		fm.Path = "full_scale/" + nowtime + "/" + fm.Hash + fileHeader.Filename
-		err =oss.Bucket().PutObject(fm.Path, file)
-		if err != nil {
-			fmt.Println(err)
-			response.Resp(c, err, fm)
-			return
+		if storeType == conf.StoreOSS {
+			//file, _ := fileHeader.Open()
+			ossPath := "full_scale/" + nowtime + "/" + fm.Hash + fileHeader.Filename
+			//err =oss.Bucket().PutObject(ossPath, file)
+			//if err != nil {
+			//	fmt.Println(err)
+			//	response.Resp(c, err, fm)
+			//	return
+			//}
+			data := fileMeta.TransferData{
+				Hash: fm.Hash,
+				TmpPath: fm.Path,
+				TargetPath: ossPath,
+				StoreType: conf.StoreOSS,
+			}
+			publishData, _ := json.Marshal(data)
+			success := rabbitmq.Publish(viper.GetString("TransExchangeName"), viper.GetString("TransOSSRoutingKey"), publishData)
+			if !success {
+				// TODO: retry
+			}
 		}
 
 		existFm, err := file_model.GetByHash(fm.Hash)
