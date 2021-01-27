@@ -127,6 +127,7 @@ func MultipartUpload(c *gin.Context) {
 		return
 	}
 	defer fd.Close()
+
 	buf := make([]byte, 1024*1024)
 	for {
 		n, err := c.Request.Body.Read(buf)
@@ -158,6 +159,7 @@ func MultipartUploadComplete(c *gin.Context) {
 	}
 	totalCount := 0
 	chunkCount := 0
+	// HGETALL's key and value is in  array for why i += 2
 	for i := 0; i < len(mpuData); i += 2 {
 		key := string(mpuData[i].([]byte))
 		val := string(mpuData[i + 1].([]byte))
