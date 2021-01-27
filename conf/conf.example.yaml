@@ -1,0 +1,30 @@
+runmode: debug # debug release test
+port: 8080
+upload_dir: /storage/
+
+mysql_user: root
+mysql_password: 123456
+mysql_network: tcp
+mysql_host: 127.0.0.1
+mysql_port: 3306
+mysql_db_name: storage
+
+cache_driver: redis
+cache_host: 127.0.0.1
+cache_pass:
+cache_port: 6379
+
+# 阿里云
+uploadUrl: https://wrath-distributed-storage.oss-cn-shanghai.aliyuncs.com
+endPoint: oss-cn-shanghai.aliyuncs.com
+accessKeyId: xxx
+accessKeySecret: xxx
+bucketName: wrath-distributed-storage
+
+## RabbitMQ
+rabbitmqUrl: amqp://guest:guest@127.0.0.1:5672
+rabbitmqAsyncSend: false #是否开启文件异步转移(默认同步)
+TransExchangeName: uploadserver.trans #用于文件transfer的交换机
+TransOSSQueueName: uploadserver.trans.oss #oss转移队列名
+TransOSSErrQueueName: uploadserver.trans.oss.err #oss转移失败后写入另一个队列的队列名
+TransOSSRoutingKey: oss #routingkey
