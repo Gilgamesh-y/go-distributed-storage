@@ -169,10 +169,10 @@ func MultipartUploadComplete(c *gin.Context) {
 		if strings.HasPrefix(key, "chunk_index") && val == "1" {
 			chunkCount += 1
 		}
-		if totalCount != chunkCount {
-			response.Resp(c, err, "上传失败")
-			return
-		}
+	}
+	if totalCount != chunkCount {
+		response.Resp(c, err, "上传失败")
+		return
 	}
 
 	// TODO Merge chunk
